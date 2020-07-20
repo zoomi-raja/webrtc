@@ -1,0 +1,24 @@
+{
+	"name": "webrtc",
+	"version": "1.0.0",
+	"description": "let see how live video works in webrtc",
+	"main": "server.js",
+	"scripts": {
+		"start": "nodemon server.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/zoomi-raja/webrtc.git"
+	},
+	"author": "zamurd ali",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/zoomi-raja/webrtc/issues"
+	},
+	"homepage": "https://github.com/zoomi-raja/webrtc#readme",
+	"dependencies": {
+		"express": "^4.17.1",
+		"uuid": "^8.2.0",
+		"ws": "^7.3.1"
+	}
+}
