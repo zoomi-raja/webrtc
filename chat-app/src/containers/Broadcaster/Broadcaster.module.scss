@@ -6,21 +6,4 @@
 			width: 100%;
 		}
 	}
-	&_messages {
-		padding: 10px;
-		display: flex;
-		flex-direction: column;
-		flex: 1;
-		.msg_container {
-			flex: 1;
-		}
-		.send_msg {
-			flex-basis: 10%;
-			justify-self: flex-end;
-			&_input {
-				padding: 10px;
-				width: 73%;
-			}
-		}
-	}
 }

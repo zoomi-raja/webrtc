@@ -1,0 +1,12 @@
+.message {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px dotted;
+	.message_detail {
+		line-height: 5px;
+		.sender_msg {
+			margin-left: 5px;
+		}
+	}
+}

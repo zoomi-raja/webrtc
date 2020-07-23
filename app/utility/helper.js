@@ -1,5 +1,5 @@
 exports.sendTo = (connection, message) => {
-	if (connection.readyState === 1) {
+	if (connection && connection.readyState === 1) {
 		connection.send(JSON.stringify(message));
 	}
 };

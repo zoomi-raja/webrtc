@@ -1,7 +1,9 @@
 import React, { useRef, useEffect, useState } from "react";
+import Messages from "../Messages/Messages";
+import SweetAlert from "react-bootstrap-sweetalert";
+import { formatTime } from "../../utility/Utility";
 
 import classes from "./Audience.module.scss";
-import SweetAlert from "react-bootstrap-sweetalert";
 // Use for remote connections
 const configuration = {
 	iceServers: [{ url: "stun:stun.1.google.com:19302" }],
@@ -17,8 +19,10 @@ const Audience = (props) => {
 	const [connectedTo, setConnectedTo] = useState("");
 	const [name, setName] = useState("");
 	const [message, setMessage] = useState("");
+	const [messages, setMessages] = useState([]);
 
 	const [alert, setAlert] = useState(null);
+	const videoElement = useRef(null);
 	//temp
 	const connectedRef = useRef();
 	const closeAlert = () => {
@@ -47,10 +51,17 @@ const Audience = (props) => {
 			receiveChannel.onopen = () => {
 				console.log("Data channel is open and ready to be used.");
 			};
-			receiveChannel.onmessage = (msg) => {
-				console.log(msg);
+			receiveChannel.onmessage = (message) => {
+				let data = JSON.parse(message.data);
+				setMessages((prev) => [...prev, data]);
 			};
 			setChannel(receiveChannel);
+		};
+		//get stream from connection
+		peerConnection.ontrack = async (event) => {
+			const remoteStream = new MediaStream();
+			videoElement.current.srcObject = remoteStream;
+			remoteStream.addTrack(event.track, remoteStream);
 		};
 		setconnection(peerConnection);
 		return () => webSocket.current.close();
@@ -106,13 +117,8 @@ const Audience = (props) => {
 
 	//send msg on channel but make sure channel is open
 	const sendMsg = () => {
-		const time = new Date().toLocaleString("en-us", {
-			month: "short",
-			year: "numeric",
-			day: "2-digit",
-		});
+		let time = formatTime(new Date());
 		let text = { time, message, name };
-		console.log(channel.readyState);
 		if (channel.readyState === "open") {
 			channel.send(JSON.stringify(text));
 		}
@@ -121,24 +127,9 @@ const Audience = (props) => {
 		<div className={classes.container}>
 			<div className={classes.container_video}>
 				<button onClick={handleLogin}>Connect</button>
-				{/* <video autoPlay playsInline ref={videoElement}></video> */}
+				<video autoPlay playsInline ref={videoElement}></video>
 			</div>
-			<div className={classes.container_messages}>
-				<div className={classes.msg_container}>
-					<div className={classes.msg}>
-						<span>no msg</span>
-					</div>
-				</div>
-				<div className={classes.send_msg}>
-					<input
-						className={classes.send_msg_input}
-						onChange={(e) => setMessage(e.target.value)}
-					></input>
-					<button className={classes.send_msg_btn} onClick={sendMsg}>
-						Send
-					</button>
-				</div>
-			</div>
+			<Messages messages={messages} setMessage={setMessage} sendMsg={sendMsg} />
 		</div>
 	);
 };

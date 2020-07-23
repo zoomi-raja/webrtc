@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
+import Messages from "../Messages/Messages";
 import SweetAlert from "react-bootstrap-sweetalert";
 import classes from "./Broadcaster.module.scss";
 
@@ -10,19 +11,19 @@ const Breadcaster = () => {
 	//refrences
 	const videoElement = useRef(null);
 	const webSocket = useRef(null);
-	const connectedRef = useRef();
 	//states
 	const [socketMessages, setSocketMessages] = useState([]);
 	const [socketOpen, setSocketOpen] = useState(false);
-	const [channel, setChannel] = useState(null);
 	const [users, setUsers] = useState({});
 	const [alert, setAlert] = useState(null);
+	const [message, setMessage] = useState("");
+	const [messages, setMessages] = useState([]);
 
 	const mediaStreamConstraints = {
 		video: true,
+		audio: true,
 	};
 	const gotLocalMediaStream = (mediaStream) => {
-		// localVideo.srcObject = mediaStream;
 		videoElement.current.srcObject = mediaStream;
 	};
 	const handleLocalMediaStreamError = (error) => {
@@ -90,9 +91,12 @@ const Breadcaster = () => {
 				});
 			}
 		};
-		let dataChannel = user.peerConnection.createDataChannel("messenger");
-		dataChannel.onmessage = (msg) => {
-			console.log(msg);
+		//add stream to connection
+		user.peerConnection.addStream(videoElement.current.srcObject);
+		user.dataChannel = user.peerConnection.createDataChannel("messenger");
+		user.dataChannel.onmessage = (message) => {
+			let data = JSON.parse(message.data);
+			setMessages((prev) => [...prev, data]);
 		};
 		const offer = await user.peerConnection.createOffer();
 		await user.peerConnection.setLocalDescription(offer);
@@ -116,6 +120,19 @@ const Breadcaster = () => {
 	const send = (data) => {
 		webSocket.current.send(JSON.stringify(data));
 	};
+	const sendMsg = () => {
+		const time = new Date().toLocaleString("en-us", {
+			month: "short",
+			year: "numeric",
+			day: "2-digit",
+		});
+		Object.values(users).forEach((user) => {
+			let text = { time, message, name: user.name };
+			if (user.dataChannel.readyState === "open") {
+				user.dataChannel.send(JSON.stringify(text));
+			}
+		});
+	};
 	const golive = () => {
 		webSocket.current = new WebSocket("ws://localhost:9000");
 		webSocket.current.onmessage = (message) => {
@@ -126,23 +143,14 @@ const Breadcaster = () => {
 			webSocket.current.close();
 		};
 	};
+
 	return (
 		<div className={classes.container}>
 			<div className={classes.container_video}>
 				<video autoPlay playsInline ref={videoElement}></video>
 				<button onClick={golive}>Go Live</button>
 			</div>
-			<div className={classes.container_messages}>
-				<div className={classes.msg_container}>
-					<div className={classes.msg}>
-						<span>no msg</span>
-					</div>
-				</div>
-				<div className={classes.send_msg}>
-					<input className={classes.send_msg_input}></input>
-					<button className={classes.send_msg_btn}>Send</button>
-				</div>
-			</div>
+			<Messages messages={messages} setMessage={setMessage} sendMsg={sendMsg} />
 		</div>
 	);
 };
