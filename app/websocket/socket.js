@@ -13,6 +13,7 @@ const socket = (wss, WebSocket) => {
 				data = {};
 			}
 			const { type } = data;
+			console.log(data);
 			let event = actions(userMap, data, wss.clients, ws);
 			//Handle message by type
 			switch (type) {

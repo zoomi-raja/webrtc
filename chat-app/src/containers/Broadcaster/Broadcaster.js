@@ -6,7 +6,7 @@ const configuration = {
 	iceServers: [{ url: "stun:stun.1.google.com:19302" }],
 };
 
-export default () => {
+const Breadcaster = () => {
 	//refrences
 	const videoElement = useRef(null);
 	const webSocket = useRef(null);
@@ -14,13 +14,9 @@ export default () => {
 	//states
 	const [socketMessages, setSocketMessages] = useState([]);
 	const [socketOpen, setSocketOpen] = useState(false);
-	const [connection, setconnection] = useState(null);
 	const [channel, setChannel] = useState(null);
-	const [users, setUsers] = useState([]);
+	const [users, setUsers] = useState({});
 	const [alert, setAlert] = useState(null);
-
-	//temp
-	const [connectedTo, setConnectedTo] = useState("");
 
 	const mediaStreamConstraints = {
 		video: true,
@@ -37,7 +33,7 @@ export default () => {
 			.getUserMedia(mediaStreamConstraints)
 			.then(gotLocalMediaStream)
 			.catch(handleLocalMediaStreamError);
-		return () => webSocket.current.close();
+		return () => (webSocket.current ? webSocket.current.close() : "");
 	}, []);
 
 	useEffect(() => {
@@ -46,7 +42,6 @@ export default () => {
 		if (data) {
 			switch (data.type) {
 				case "connect":
-					console.log(webSocket.current.readyState);
 					send({
 						type: "login",
 						name: "broadcaster",
@@ -56,56 +51,67 @@ export default () => {
 				case "login":
 					onLogin(data);
 					break;
-				case "updateUsers":
-					updateUsersList(data);
+				case "updateUser":
+					onGuestJoined(data);
 					break;
-				case "removeUser":
+				case "leave":
 					removeUser(data);
 					break;
-				case "offer":
-					onOffer(data);
+				case "answer":
+					onAnswer(data);
 					break;
-				//no need of candidate because in answer broadcaster wil send its ice server
 				default:
 					break;
 			}
 		}
 	}, [socketMessages]);
 	const onLogin = (data) => {
-		console.log(data);
+		console.log("on login code");
 	};
-	const updateUsersList = ({ user }) => {
-		setUsers((prev) => [...prev, user]);
+	const onAnswer = ({ answer, name }) => {
+		users[name].peerConnection.setRemoteDescription(
+			new RTCSessionDescription(answer)
+		);
+	};
+	const onGuestJoined = async ({ user }) => {
+		user.peerConnection = new RTCPeerConnection(configuration);
+		user.peerConnection.onconnectionstatechange = (evt) => {
+			console.log("change connection state: ", evt);
+		};
+		//when remote answere to our offer and we set that in setRemoteDescription
+		user.peerConnection.onicecandidate = ({ candidate }) => {
+			console.log("ice candidate");
+			let connectedTo = user.name;
+			if (candidate && !!connectedTo) {
+				send({
+					name: connectedTo,
+					type: "candidate",
+					candidate,
+				});
+			}
+		};
+		let dataChannel = user.peerConnection.createDataChannel("messenger");
+		dataChannel.onmessage = (msg) => {
+			console.log(msg);
+		};
+		const offer = await user.peerConnection.createOffer();
+		await user.peerConnection.setLocalDescription(offer);
+		send({
+			type: "offer",
+			offer,
+			name: user.name,
+		});
+		setUsers((prev) => {
+			return { ...prev, [user.name]: user };
+		});
 	};
 
 	const removeUser = ({ user }) => {
-		setUsers((prev) => prev.filter((u) => u.userName !== user.userName));
-	};
-	const onOffer = ({ offer, name }) => {
-		setConnectedTo(name);
-		connectedRef.current = name;
-
-		connection
-			.setRemoteDescription(new RTCSessionDescription(offer))
-			.then(() => connection.createAnswer())
-			.then((answer) => connection.setLocalDescription(answer))
-			.then(() =>
-				send({ type: "answer", answer: connection.localDescription, name })
-			)
-			.catch((e) => {
-				console.log({ e });
-				setAlert(
-					<SweetAlert
-						warning
-						confirmBtnBsStyle="danger"
-						title="Failed"
-						onConfirm={closeAlert}
-						onCancel={closeAlert}
-					>
-						An error has occurred.
-					</SweetAlert>
-				);
-			});
+		setUsers((prev) => {
+			let users = { ...prev };
+			delete users[user.name];
+			return users;
+		});
 	};
 	const send = (data) => {
 		webSocket.current.send(JSON.stringify(data));
@@ -119,33 +125,6 @@ export default () => {
 		webSocket.current.onclose = () => {
 			webSocket.current.close();
 		};
-		let localConnection = new RTCPeerConnection(configuration);
-		//when the browser finds an ice candidate we send it to another peer
-		localConnection.onicecandidate = ({ candidate }) => {
-			let connectedTo = connectedRef.current;
-
-			if (candidate && !!connectedTo) {
-				send({
-					name: connectedTo,
-					type: "candidate",
-					candidate,
-				});
-			}
-		};
-		localConnection.ondatachannel = (event) => {
-			let receiveChannel = event.channel;
-			receiveChannel.onopen = () => {
-				console.log("Data channel is open and ready to be used.");
-			};
-			receiveChannel.onmessage = (messag) => {
-				console.log(messag);
-			};
-			setChannel(receiveChannel);
-		};
-		setconnection(localConnection);
-	};
-	const closeAlert = () => {
-		setAlert(null);
 	};
 	return (
 		<div className={classes.container}>
@@ -167,3 +146,4 @@ export default () => {
 		</div>
 	);
 };
+export default Breadcaster;

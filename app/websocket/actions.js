@@ -24,7 +24,12 @@ module.exports = (userMap, request, allConnections, currentConnection) => {
 					success: true,
 					users: loggedIn,
 				});
-				sendToAll(allConnections, "updateUsers", currentConnection);
+				if (name != "broadcaster") {
+					sendTo(userMap.get("broadcaster"), {
+						type: "updateUser",
+						user: { id, name },
+					});
+				}
 			}
 		},
 		offer: () => {
@@ -44,7 +49,7 @@ module.exports = (userMap, request, allConnections, currentConnection) => {
 			} else {
 				sendTo(currentConnection, {
 					type: "error",
-					message: `User ${name} does not exist!`,
+					message: `offer User ${name} does not exist!`,
 				});
 			}
 		},
@@ -54,6 +59,7 @@ module.exports = (userMap, request, allConnections, currentConnection) => {
 			if (!!answerRecipient) {
 				sendTo(answerRecipient, {
 					type: "answer",
+					name: currentConnection.name,
 					answer,
 				});
 				sendTo(currentConnection, {
@@ -63,7 +69,7 @@ module.exports = (userMap, request, allConnections, currentConnection) => {
 			} else {
 				sendTo(currentConnection, {
 					type: "error",
-					message: `User ${name} does not exist!`,
+					message: `answer User ${name} does not exist!`,
 				});
 			}
 		},
@@ -78,7 +84,7 @@ module.exports = (userMap, request, allConnections, currentConnection) => {
 			} else {
 				sendTo(currentConnection, {
 					type: "error",
-					message: `User ${name} does not exist!`,
+					message: `candidate User ${name} does not exist!`,
 				});
 			}
 		},

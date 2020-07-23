@@ -163,8 +163,9 @@ const Chat = () => {
 			localConnection.onicecandidate = ({ candidate }) => {
 				console.log(candidate);
 				let connectedTo = connectedRef.current;
-
+				console.log("first");
 				if (candidate && !!connectedTo) {
+					console.log("first inside if");
 					send({
 						name: connectedTo,
 						type: "candidate",
@@ -233,6 +234,7 @@ const Chat = () => {
 
 	//when we got ice candidate from another user
 	const onCandidate = ({ candidate }) => {
+		console.log("second");
 		connection.addIceCandidate(new RTCIceCandidate(candidate));
 	};
 
