@@ -9,7 +9,7 @@ Intension of this script is fully working broadcast app. There will be only one 
 pending points
 1- maintain state of user on browser refresh
 2- multiple tab should be considered as one user
-## Technologies (Fancy Names)
+## Technologies
 - **Node (Express)**
 - **React**
 - **Docker**
