@@ -1,16 +1,15 @@
 import React, { useRef, useEffect, useState } from "react";
 import Messages from "../Messages/Messages";
 import SweetAlert from "react-bootstrap-sweetalert";
+import { formatTime, sendMsgOnPeerChannel } from "../../utility/Utility";
+import { config, IceConfiguration } from "../../utility/config";
 import classes from "./Broadcaster.module.scss";
-
-const configuration = {
-	iceServers: [{ url: "stun:stun.1.google.com:19302" }],
-};
 
 const Breadcaster = () => {
 	//refrences
 	const videoElement = useRef(null);
 	const webSocket = useRef(null);
+	const userRef = useRef({});
 	//states
 	const [socketMessages, setSocketMessages] = useState([]);
 	const [socketOpen, setSocketOpen] = useState(false);
@@ -19,10 +18,6 @@ const Breadcaster = () => {
 	const [message, setMessage] = useState("");
 	const [messages, setMessages] = useState([]);
 
-	const mediaStreamConstraints = {
-		video: true,
-		audio: true,
-	};
 	const gotLocalMediaStream = (mediaStream) => {
 		videoElement.current.srcObject = mediaStream;
 	};
@@ -30,6 +25,13 @@ const Breadcaster = () => {
 		console.log("navigator.getUserMedia error: ", error);
 	};
 	useEffect(() => {
+		userRef.current = { ...users };
+	}, [users]);
+	useEffect(() => {
+		const mediaStreamConstraints = {
+			video: true,
+			audio: true,
+		};
 		navigator.mediaDevices
 			.getUserMedia(mediaStreamConstraints)
 			.then(gotLocalMediaStream)
@@ -39,7 +41,6 @@ const Breadcaster = () => {
 
 	useEffect(() => {
 		let data = socketMessages.pop();
-		console.log(data);
 		if (data) {
 			switch (data.type) {
 				case "connect":
@@ -75,13 +76,12 @@ const Breadcaster = () => {
 		);
 	};
 	const onGuestJoined = async ({ user }) => {
-		user.peerConnection = new RTCPeerConnection(configuration);
+		user.peerConnection = new RTCPeerConnection(IceConfiguration);
 		user.peerConnection.onconnectionstatechange = (evt) => {
 			console.log("change connection state: ", evt);
 		};
 		//when remote answere to our offer and we set that in setRemoteDescription
 		user.peerConnection.onicecandidate = ({ candidate }) => {
-			console.log("ice candidate");
 			let connectedTo = user.name;
 			if (candidate && !!connectedTo) {
 				send({
@@ -95,6 +95,16 @@ const Breadcaster = () => {
 		user.peerConnection.addStream(videoElement.current.srcObject);
 		user.dataChannel = user.peerConnection.createDataChannel("messenger");
 		user.dataChannel.onmessage = (message) => {
+			//send incoming msg to each user watching the stream
+			if (Object.keys(userRef.current).length > 0) {
+				Object.values(userRef.current).forEach((user) => {
+					sendMsgOnPeerChannel(
+						user.peerConnection,
+						user.dataChannel,
+						message.data
+					);
+				});
+			}
 			let data = JSON.parse(message.data);
 			setMessages((prev) => [...prev, data]);
 		};
@@ -117,24 +127,38 @@ const Breadcaster = () => {
 			return users;
 		});
 	};
+	const closeAlert = () => {
+		setAlert(null);
+	};
 	const send = (data) => {
-		webSocket.current.send(JSON.stringify(data));
+		if (socketOpen) {
+			webSocket.current.send(JSON.stringify(data));
+		} else {
+			setAlert(
+				<SweetAlert
+					success
+					title="Connection Closed"
+					onConfirm={closeAlert}
+					onCancel={closeAlert}
+				>
+					Logged in successfully!
+				</SweetAlert>
+			);
+		}
 	};
 	const sendMsg = () => {
-		const time = new Date().toLocaleString("en-us", {
-			month: "short",
-			year: "numeric",
-			day: "2-digit",
-		});
+		let time = formatTime(new Date());
 		Object.values(users).forEach((user) => {
-			let text = { time, message, name: user.name };
-			if (user.dataChannel.readyState === "open") {
-				user.dataChannel.send(JSON.stringify(text));
-			}
+			let text = { time, message, name: "broadcaster" };
+			sendMsgOnPeerChannel(
+				user.peerConnection,
+				user.dataChannel,
+				JSON.stringify(text)
+			);
 		});
 	};
 	const golive = () => {
-		webSocket.current = new WebSocket("ws://localhost:9000");
+		webSocket.current = new WebSocket(config.remoteURL);
 		webSocket.current.onmessage = (message) => {
 			const data = JSON.parse(message.data);
 			setSocketMessages((prev) => [...prev, data]);
@@ -146,6 +170,7 @@ const Breadcaster = () => {
 
 	return (
 		<div className={classes.container}>
+			{alert}
 			<div className={classes.container_video}>
 				<video autoPlay playsInline ref={videoElement}></video>
 				<button onClick={golive}>Go Live</button>

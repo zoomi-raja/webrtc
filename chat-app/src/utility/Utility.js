@@ -12,3 +12,9 @@ export const formatTime = (date = false) => {
 		leadingZero(date.getSeconds());
 	return time;
 };
+
+export const sendMsgOnPeerChannel = (peer, channel, msg) => {
+	if (peer.connectionState === "connected" && channel.readyState === "open") {
+		channel.send(msg);
+	}
+};
