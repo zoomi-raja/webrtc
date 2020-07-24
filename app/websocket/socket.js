@@ -1,9 +1,12 @@
 const { v4: uuidv4 } = require("uuid");
+const WebSocket = require("ws");
 const { sendTo, sendToAll } = require("../utility/helper");
 const actions = require("./actions");
-const userMap = new Map();
-const socket = (wss, WebSocket) => {
+
+const socket = (server, userMap) => {
+	const wss = new WebSocket.Server({ server });
 	wss.on("connection", (ws, request) => {
+		console.log("new connetion");
 		// console.log(WebSocket.OPEN);
 		ws.on("message", (msg) => {
 			let data;
@@ -12,11 +15,11 @@ const socket = (wss, WebSocket) => {
 			} catch (e) {
 				data = {};
 			}
-			const { type } = data;
+			const { action } = data;
 			console.log(data);
 			let event = actions(userMap, data, wss.clients, ws);
 			//Handle message by type
-			switch (type) {
+			switch (action) {
 				case "login":
 					//Check if username is available
 					event.login();
@@ -40,7 +43,7 @@ const socket = (wss, WebSocket) => {
 				default:
 					sendTo(ws, {
 						type: "error",
-						message: "Command not found: " + type,
+						message: "Command not found: " + action,
 					});
 					break;
 			}
@@ -56,6 +59,16 @@ const socket = (wss, WebSocket) => {
 				message: "Well hello there, I am a WebSocket server",
 			})
 		);
+	});
+
+	server.on("upgrade", function upgrade(request, socket, head) {
+		if (/test/.test(request.url)) {
+			//will add authentication here and api to get categories
+			socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+			socket.destroy();
+			console.log("destroy");
+			return;
+		}
 	});
 };
 

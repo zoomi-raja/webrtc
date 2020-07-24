@@ -5,6 +5,7 @@ exports.sendTo = (connection, message) => {
 };
 exports.sendToAll = (allConnections, type, currentConnection) => {
 	let { id, name: userName } = currentConnection;
+	if (!userName) return;
 	allConnections.forEach(function each(connection) {
 		if (connection !== currentConnection && connection.readyState === 1) {
 			connection.send(

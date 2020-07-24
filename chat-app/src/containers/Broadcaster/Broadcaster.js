@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import Messages from "../Messages/Messages";
 import SweetAlert from "react-bootstrap-sweetalert";
-import { formatTime, sendMsgOnPeerChannel } from "../../utility/Utility";
+import { formatTime, sendMsgOnPeerChannel } from "../../utility/utility";
 import { config, IceConfiguration } from "../../utility/config";
 import classes from "./Broadcaster.module.scss";
 
@@ -12,7 +12,6 @@ const Breadcaster = () => {
 	const userRef = useRef({});
 	//states
 	const [socketMessages, setSocketMessages] = useState([]);
-	const [socketOpen, setSocketOpen] = useState(false);
 	const [users, setUsers] = useState({});
 	const [alert, setAlert] = useState(null);
 	const [message, setMessage] = useState("");
@@ -48,7 +47,6 @@ const Breadcaster = () => {
 						type: "login",
 						name: "broadcaster",
 					});
-					setSocketOpen(true);
 					break;
 				case "login":
 					onLogin(data);
@@ -131,13 +129,16 @@ const Breadcaster = () => {
 		setAlert(null);
 	};
 	const send = (data) => {
-		if (socketOpen) {
+		if (webSocket.current.readyState) {
 			webSocket.current.send(JSON.stringify(data));
 		} else {
 			setAlert(
 				<SweetAlert
-					success
-					title="Connection Closed"
+					warning
+					confirmBtnBsStyle="danger"
+					title="Failed"
+					// success
+					// title="Connection Closed"
 					onConfirm={closeAlert}
 					onCancel={closeAlert}
 				>

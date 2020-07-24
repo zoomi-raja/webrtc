@@ -1,35 +1,47 @@
-const { v4: uuidv4 } = require("uuid");
 const { sendTo, sendToAll } = require("../utility/helper");
+const {
+	validateLoginRequest,
+	validateBroadcaster,
+	validateAudience,
+} = require("../utility/validate");
 module.exports = (userMap, request, allConnections, currentConnection) => {
 	return {
 		login: () => {
-			let { name } = request;
-			if (userMap.has(name)) {
-				sendTo(currentConnection, {
-					type: "login",
-					success: false,
-					message: "Username is unavailable",
-				});
-			} else {
-				const id = uuidv4();
+			try {
+				let validated = validateLoginRequest(request);
 				let loggedIn = [];
-				for (let { id, name: userName } of userMap.values()) {
-					loggedIn.push({ id, userName });
+				let broadcaster;
+				if (validated.type == "broadcaster") {
+					validateBroadcaster(userMap, validated.name);
+					validated.audience = new Map();
+					currentConnection.user = validated;
+					userMap.set(validated.name, currentConnection);
+				} else {
+					validateAudience(userMap, validated);
+					broadcaster = userMap.get(validated.broadcaster);
+					currentConnection.user = validated;
+					for (let { user } of broadcaster.user.audience.values()) {
+						loggedIn.push({ ...user });
+					}
+					broadcaster.user.audience.set(validated.name, currentConnection);
 				}
-				userMap.set(name, currentConnection);
-				currentConnection.name = name;
-				currentConnection.id = id;
 				sendTo(currentConnection, {
 					type: "login",
 					success: true,
 					users: loggedIn,
 				});
-				if (name != "broadcaster") {
-					sendTo(userMap.get("broadcaster"), {
-						type: "updateUser",
-						user: { id, name },
+				if (validated.type != "broadcaster") {
+					sendTo(broadcaster, {
+						type: "NewViewer",
+						user: validated,
 					});
 				}
+			} catch (err) {
+				sendTo(currentConnection, {
+					type: err.action,
+					success: false,
+					message: err.message,
+				});
 			}
 		},
 		offer: () => {

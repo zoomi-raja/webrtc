@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import Messages from "../Messages/Messages";
 import SweetAlert from "react-bootstrap-sweetalert";
-import { formatTime } from "../../utility/Utility";
+import { formatTime } from "../../utility/utility";
 
 import classes from "./Audience.module.scss";
 // Use for remote connections
