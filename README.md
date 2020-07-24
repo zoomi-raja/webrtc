@@ -1,6 +1,5 @@
-# webrtc
 <p align="center">
-  <h1>TourMate-bp</h1>
+  <h1>webrtc</h1>
   <a href="https://github.com/zoomi-raja/webrtc">
     <img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg" alt="contributions" />
   </a>
