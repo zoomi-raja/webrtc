@@ -21,3 +21,7 @@ pending points
 - **Node (Express)**
 - **React**
 - **Docker**
+
+## Contributing
+
+Contributions welcome!
