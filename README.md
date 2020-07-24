@@ -4,12 +4,15 @@
     <img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg" alt="contributions" />
   </a>
 </p>
+
 ## Introduction
-Intension of this script is fully working broadcast app. There will be only one Breadcaster to whom connecting audience can view and can comment on stream.
+
+Intension of this script is to make fully working broadcast app. There will be only one Broadcaster to whom connecting audience can view and can comment on stream.
 pending points
-1- maintain state of user on browser refresh
-2- multiple tab should be considered as one user
+1. maintain state of user on browser refresh
+2. multiple tab should be considered as one user
 ## Technologies
+
 - **Node (Express)**
 - **React**
 - **Docker**
