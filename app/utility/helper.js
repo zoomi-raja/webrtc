@@ -1,19 +1,28 @@
-exports.sendTo = (connection, message) => {
+const sendTo = (connection, message) => {
 	if (connection && connection.readyState === 1) {
 		connection.send(JSON.stringify(message));
 	}
 };
-exports.sendToAll = (allConnections, type, currentConnection) => {
-	let { id, name: userName } = currentConnection;
-	if (!userName) return;
-	allConnections.forEach(function each(connection) {
-		if (connection !== currentConnection && connection.readyState === 1) {
-			connection.send(
+const sendToAll = (allConnections, type, currentConnection) => {
+	let { userID, name } = currentConnection.user;
+	for (let audience of allConnections.values()) {
+		if (audience.readyState === 1) {
+			audience.send(
 				JSON.stringify({
 					type,
-					user: { id, userName },
+					user: { userID, name },
 				})
 			);
 		}
-	});
+	}
 };
+
+const intervalForIntreptedBroadCaster = (connection, userMap) => {
+	return setTimeout(() => {
+		let room = userMap.get(connection.user.name);
+		userMap.delete(connection.user.name);
+		sendToAll(room.user.audience, "broadcast-finished", connection);
+	}, 30000);
+};
+
+module.exports = { sendTo, sendToAll, intervalForIntreptedBroadCaster };

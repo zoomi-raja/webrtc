@@ -1,4 +1,3 @@
-const { v4: uuidv4 } = require("uuid");
 const WebSocket = require("ws");
 const { sendTo, sendToAll } = require("../utility/helper");
 const actions = require("./actions");
@@ -16,7 +15,6 @@ const socket = (server, userMap) => {
 				data = {};
 			}
 			const { action } = data;
-			console.log(data);
 			let event = actions(userMap, data, wss.clients, ws);
 			//Handle message by type
 			switch (action) {
@@ -36,8 +34,8 @@ const socket = (server, userMap) => {
 					//Check if user to send candidate to exists
 					event.candidate();
 					break;
-				case "leave":
-					sendToAll(wss.clients, "leave", ws);
+				case "stop-broadcasting":
+					event.broadcastEnd();
 					break;
 
 				default:
@@ -49,8 +47,8 @@ const socket = (server, userMap) => {
 			}
 		});
 		ws.on("close", function () {
-			delete userMap.delete(ws.name);
-			sendToAll(wss.clients, "leave", ws);
+			let event = actions(userMap, {}, wss.clients, ws);
+			event.connectionClosed();
 		});
 		//send immediate a feedback to the incoming connection
 		ws.send(

@@ -34,7 +34,13 @@ exports.validateLoginRequest = (request) => {
 
 exports.validateBroadcaster = (userMap, name) => {
 	if (userMap.has(name)) {
-		throw new exception("Username is unavailable", "already_open");
+		//check if broadcast was intrepted
+		room = userMap.get(name);
+		if (room.user.intrepted) {
+			return true;
+		} else {
+			throw new exception("Username is unavailable", "already_open");
+		}
 	}
 };
 exports.validateAudience = (userMap, request) => {
