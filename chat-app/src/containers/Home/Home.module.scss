@@ -1,0 +1,33 @@
+.container {
+	width: 900px;
+	margin: 0 auto;
+	.top {
+		text-align: right;
+		padding: 20px;
+		border-radius: 5px;
+		border: 1px solid rgba(0, 0, 0, 0.3);
+	}
+	.main_section {
+		padding: 20px;
+		display: flex;
+		.filters {
+			flex-basis: 20%;
+			.tag {
+				display: flex;
+				div {
+					margin-right: 10px;
+				}
+			}
+		}
+		.broadcasters {
+			flex: 1;
+		}
+	}
+}
+
+.form_input {
+	margin: 10px 0 10px;
+	label {
+		margin-left: 10px;
+	}
+}

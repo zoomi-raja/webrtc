@@ -9118,6 +9118,11 @@ react-scripts@3.4.1:
   optionalDependencies:
     fsevents "2.1.2"
 
+react-tag-autocomplete@^6.0.0-beta.6:
+  version "6.0.0-beta.6"
+  resolved "https://registry.yarnpkg.com/react-tag-autocomplete/-/react-tag-autocomplete-6.0.0-beta.6.tgz#a1cdb7c3014650fa0ee717754a56ea7cc313a61f"
+  integrity sha512-wHtTIjo5nmfIRB5ymPoq98TvNfZx61qJ01v2eLMvPTIDgQjcGhtPy2TVmAdybRfPTVcTs+8CY7oE4ErBDle3+A==
+
 react@^16.13.1:
   version "16.13.1"
   resolved "https://registry.yarnpkg.com/react/-/react-16.13.1.tgz#2e818822f1a9743122c063d6410d85c1e3afe48e"

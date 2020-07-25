@@ -6,8 +6,8 @@ export default () => {
 	return (
 		<div className={classes.nav}>
 			<NavLink to="/">Home</NavLink>
-			<NavLink to="/broadcaster">Broadcast</NavLink>
-			<NavLink to="/audience">Audience</NavLink>
+			{/* <NavLink to="/broadcaster">Broadcast</NavLink>
+			<NavLink to="/audience">Audience</NavLink> */}
 		</div>
 	);
 };

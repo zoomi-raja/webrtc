@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import Messages from "../Messages/Messages";
+import Messages from "../../components/Messages/Messages";
 import SweetAlert from "react-bootstrap-sweetalert";
 import { formatTime } from "../../utility/utility";
 
