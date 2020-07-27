@@ -33,10 +33,10 @@ const Watch = (props) => {
 			return;
 		}
 		let viewer = { name, type: "audience", broadcaster: broadcaster.current };
-		// localStorage.setItem(
-		// 	"viewer",
-		// 	JSON.stringify({ [broadcaster.current]: viewer })
-		// );
+		localStorage.setItem(
+			"viewer",
+			JSON.stringify({ [broadcaster.current]: viewer })
+		);
 		setViewer(viewer);
 	};
 	const closeAlert = () => {
@@ -49,8 +49,6 @@ const Watch = (props) => {
 			Object.keys(viewer).length > 0
 				? localStorage.setItem("viewer", viewer)
 				: localStorage.removeItem("viewer");
-			setViewer({});
-		} else {
 			setViewer({});
 		}
 	};
