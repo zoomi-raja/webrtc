@@ -1,0 +1,24 @@
+.form {
+	padding: 2rem;
+	.form_group {
+		width: 50%;
+		margin-bottom: 10px;
+		label {
+			margin-right: 10px;
+		}
+		input {
+			border-radius: 5px;
+			padding: 6px;
+			width: 100%;
+		}
+	}
+	.select {
+		label {
+			display: block;
+		}
+		select {
+			width: 100%;
+			padding: 6px;
+		}
+	}
+}

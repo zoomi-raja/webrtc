@@ -1,6 +1,7 @@
 import React from "react";
+import BroadcastList from "../../components/Broadcast/Lists/Lists";
 import classes from "./Home.module.scss";
-const home = (props) => {
+const Home = (props) => {
 	const goLive = () => {
 		props.history.push("broadcaster");
 	};
@@ -46,12 +47,10 @@ const home = (props) => {
 						</div>
 					</div>
 				</div>
-				<div className={classes.broadcasters}>
-					<span>Broadcasts</span>
-				</div>
+				<BroadcastList />
 			</div>
 		</div>
 	);
 };
 
-export default home;
+export default Home;

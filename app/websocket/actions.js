@@ -19,8 +19,12 @@ module.exports = (userMap, request, allConnections, currentConnection) => {
 				if (validated.type == "broadcaster") {
 					let isIntrepted = validateBroadcaster(userMap, validated.name);
 					if (isIntrepted) {
+						//fetch data from old instance
 						broadcaster = userMap.get(validated.name);
+						userMap.delete(validated.name);
 						currentConnection.user = broadcaster.user;
+						userMap.set(validated.name, currentConnection);
+						//
 						clearTimeout(currentConnection.user.interval);
 						delete currentConnection.user.interval;
 						currentConnection.user.intrepted = false;
@@ -131,6 +135,7 @@ module.exports = (userMap, request, allConnections, currentConnection) => {
 			}
 		},
 		broadcastEnd: () => {
+			console.log(request);
 			if (currentConnection.user) {
 				let room = userMap.get(currentConnection.user.name);
 				userMap.delete(currentConnection.user.name);
@@ -145,7 +150,11 @@ module.exports = (userMap, request, allConnections, currentConnection) => {
 		},
 		connectionClosed: () => {
 			let user = currentConnection.user;
-			if (user.type && ["broadcaster", "audience"].includes(user.type)) {
+			if (
+				user &&
+				user.type &&
+				["broadcaster", "audience"].includes(user.type)
+			) {
 				switch (user.type) {
 					case "audience":
 						if (user.broadcaster && userMap.has(user.broadcaster)) {
@@ -181,6 +190,13 @@ module.exports = (userMap, request, allConnections, currentConnection) => {
 						break;
 				}
 			}
+		},
+		reconnect: () => {
+			let room = userMap.get(request.broadcaster);
+			sendTo(room, {
+				type: "reconnect",
+				name: currentConnection.user.name,
+			});
 		},
 	};
 };

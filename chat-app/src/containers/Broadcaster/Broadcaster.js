@@ -14,6 +14,10 @@ const Breadcaster = () => {
 			setHaveValues(broadcaster);
 		}
 	}, []);
+	const stopStream = () => {
+		localStorage.removeItem("broadcaster");
+		setHaveValues({});
+	};
 	const prepareBroadCast = (name, title, tags, category) => {
 		if (
 			tags.length <= 0 ||
@@ -34,7 +38,7 @@ const Breadcaster = () => {
 			);
 			return;
 		}
-		let broadcaster = { name, title, tags, category };
+		let broadcaster = { name, title, tags, category, type: "broadcaster" };
 		localStorage.setItem("broadcaster", JSON.stringify(broadcaster));
 		setHaveValues(broadcaster);
 	};
@@ -43,7 +47,7 @@ const Breadcaster = () => {
 	};
 	let html = <BroadcastForm prepareBroadCast={prepareBroadCast} />;
 	if (Object.keys(haveValues).length > 0) {
-		html = <Broadcast />;
+		html = <Broadcast stopStream={stopStream} user={haveValues} />;
 	}
 	return (
 		<div>

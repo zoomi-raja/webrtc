@@ -1,6 +1,8 @@
 const sendTo = (connection, message) => {
 	if (connection && connection.readyState === 1) {
 		connection.send(JSON.stringify(message));
+	} else {
+		console.log("connection lost");
 	}
 };
 const sendToAll = (allConnections, type, currentConnection) => {

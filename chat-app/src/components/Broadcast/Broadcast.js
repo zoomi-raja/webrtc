@@ -4,8 +4,10 @@ import SweetAlert from "react-bootstrap-sweetalert";
 import { formatTime, sendMsgOnPeerChannel } from "../../utility/utility";
 import { config, IceConfiguration } from "../../utility/config";
 import classes from "./Broadcaste.module.scss";
+import { useHistory } from "react-router-dom";
 
-const Breadcast = () => {
+const Breadcast = (props) => {
+	let history = useHistory();
 	//refrences
 	const videoElement = useRef(null);
 	const webSocket = useRef(null);
@@ -13,6 +15,7 @@ const Breadcast = () => {
 	//states
 	const [socketMessages, setSocketMessages] = useState([]);
 	const [users, setUsers] = useState({});
+	const [usersCount, setUsersCount] = useState(0);
 	const [alert, setAlert] = useState(null);
 	const [message, setMessage] = useState("");
 	const [messages, setMessages] = useState([]);
@@ -20,45 +23,90 @@ const Breadcast = () => {
 	const gotLocalMediaStream = (mediaStream) => {
 		videoElement.current.srcObject = mediaStream;
 	};
-	const handleLocalMediaStreamError = (error) => {
-		console.log("navigator.getUserMedia error: ", error);
-	};
-	useEffect(() => {
-		userRef.current = { ...users };
-	}, [users]);
-	useEffect(() => {
+
+	async function fetchStream() {
 		const mediaStreamConstraints = {
 			video: true,
 			audio: true,
 		};
-		navigator.mediaDevices
-			.getUserMedia(mediaStreamConstraints)
-			.then(gotLocalMediaStream)
-			.catch(handleLocalMediaStreamError);
-		return () => (webSocket.current ? webSocket.current.close() : "");
+		const result = await navigator.mediaDevices.getUserMedia(
+			mediaStreamConstraints
+		);
+		gotLocalMediaStream(result);
+	}
+	useEffect(() => {
+		userRef.current = { ...users };
+	}, [users]);
+	useEffect(() => {
+		webSocket.current = new WebSocket(config.remoteURL);
+		webSocket.current.onmessage = (message) => {
+			const data = JSON.parse(message.data);
+			setSocketMessages((prev) => [...prev, data]);
+		};
+		webSocket.current.onclose = () => {
+			webSocket.current.close();
+		};
+
+		fetchStream();
+
+		return () => {
+			if (webSocket.current) {
+				webSocket.current.close();
+				if (videoElement.current.srcObject) {
+					videoElement.current.srcObject.getTracks().forEach(function (track) {
+						track.stop();
+					});
+				}
+			}
+		};
 	}, []);
 
 	useEffect(() => {
 		let data = socketMessages.pop();
 		if (data) {
+			console.log(data);
 			switch (data.type) {
 				case "connect":
 					send({
-						type: "login",
-						name: "broadcaster",
+						action: "login",
+						...props.user,
 					});
 					break;
 				case "login":
 					onLogin(data);
 					break;
-				case "updateUser":
+				case "NewViewer":
 					onGuestJoined(data);
 					break;
-				case "leave":
+				case "user-left":
 					removeUser(data);
+					break;
+				case "reconnect":
+					let userData = { user: { name: data.name } };
+					setTimeout(() => {
+						onGuestJoined(userData);
+					}, 100);
+
 					break;
 				case "answer":
 					onAnswer(data);
+					break;
+				case "already_open":
+					setAlert(
+						<SweetAlert
+							warning
+							confirmBtnBsStyle="danger"
+							title="Failed"
+							onConfirm={() => {
+								history.push("/");
+							}}
+							onCancel={() => {
+								history.push("/");
+							}}
+						>
+							close other tab!
+						</SweetAlert>
+					);
 					break;
 				default:
 					break;
@@ -66,7 +114,14 @@ const Breadcast = () => {
 		}
 	}, [socketMessages]);
 	const onLogin = (data) => {
-		console.log("on login code");
+		// if (data.users.length > 0) {
+		// 	setTimeout(() => {
+		// 		data.users.forEach((user) => {
+		// 			onGuestJoined({ user });
+		// 		});
+		// 	}, 100);
+		// }
+		console.log("logedin successfully");
 	};
 	const onAnswer = ({ answer, name }) => {
 		users[name].peerConnection.setRemoteDescription(
@@ -80,11 +135,10 @@ const Breadcast = () => {
 		};
 		//when remote answere to our offer and we set that in setRemoteDescription
 		user.peerConnection.onicecandidate = ({ candidate }) => {
-			let connectedTo = user.name;
-			if (candidate && !!connectedTo) {
+			if (candidate) {
 				send({
-					name: connectedTo,
-					type: "candidate",
+					name: user.name,
+					action: "candidate",
 					candidate,
 				});
 			}
@@ -109,19 +163,21 @@ const Breadcast = () => {
 		const offer = await user.peerConnection.createOffer();
 		await user.peerConnection.setLocalDescription(offer);
 		send({
-			type: "offer",
+			action: "offer",
 			offer,
 			name: user.name,
 		});
+		setUsersCount((prev) => ++prev);
 		setUsers((prev) => {
 			return { ...prev, [user.name]: user };
 		});
 	};
 
-	const removeUser = ({ user }) => {
+	const removeUser = ({ name }) => {
+		setUsersCount((prev) => --prev);
 		setUsers((prev) => {
 			let users = { ...prev };
-			delete users[user.name];
+			delete users[name];
 			return users;
 		});
 	};
@@ -142,7 +198,7 @@ const Breadcast = () => {
 					onConfirm={closeAlert}
 					onCancel={closeAlert}
 				>
-					Logged in successfully!
+					user is left!
 				</SweetAlert>
 			);
 		}
@@ -158,15 +214,12 @@ const Breadcast = () => {
 			);
 		});
 	};
-	const golive = () => {
-		webSocket.current = new WebSocket(config.remoteURL);
-		webSocket.current.onmessage = (message) => {
-			const data = JSON.parse(message.data);
-			setSocketMessages((prev) => [...prev, data]);
-		};
-		webSocket.current.onclose = () => {
-			webSocket.current.close();
-		};
+
+	const stopStream = () => {
+		send({
+			action: "stop-broadcasting",
+		});
+		props.stopStream();
 	};
 
 	return (
@@ -174,7 +227,8 @@ const Breadcast = () => {
 			{alert}
 			<div className={classes.container_video}>
 				<video autoPlay playsInline ref={videoElement}></video>
-				<button onClick={golive}>Go Live</button>
+				<span>{usersCount}</span>
+				<button onClick={stopStream}>Stop</button>
 			</div>
 			<Messages messages={messages} setMessage={setMessage} sendMsg={sendMsg} />
 		</div>

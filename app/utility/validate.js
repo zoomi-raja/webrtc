@@ -45,14 +45,14 @@ exports.validateBroadcaster = (userMap, name) => {
 };
 exports.validateAudience = (userMap, request) => {
 	if (!userMap.has(request.broadcaster)) {
-		throw new exception("login", "no such broadcaster");
+		throw new exception("no such broadcaster", "no-broadcaster");
 	} else {
 		let broadcaster = userMap.get(request.broadcaster);
 		if (
 			broadcaster.user.audience &&
 			broadcaster.user.audience.has(request.name)
 		) {
-			throw new exception("already_open", "Username is unavailable");
+			throw new exception("Username is unavailable", "already_open");
 		}
 	}
 };

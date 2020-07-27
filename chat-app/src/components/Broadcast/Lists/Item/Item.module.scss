@@ -1,0 +1,10 @@
+.item {
+	text-align: center;
+	display: inline-block;
+	&__img {
+		max-width: 250px;
+		img {
+			width: 100%;
+		}
+	}
+}

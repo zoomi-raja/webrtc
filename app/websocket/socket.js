@@ -1,5 +1,5 @@
 const WebSocket = require("ws");
-const { sendTo, sendToAll } = require("../utility/helper");
+const { sendTo } = require("../utility/helper");
 const actions = require("./actions");
 
 const socket = (server, userMap) => {
@@ -37,7 +37,9 @@ const socket = (server, userMap) => {
 				case "stop-broadcasting":
 					event.broadcastEnd();
 					break;
-
+				case "requst-reconnect":
+					event.reconnect();
+					break;
 				default:
 					sendTo(ws, {
 						type: "error",

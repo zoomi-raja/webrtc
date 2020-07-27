@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, useState } from "react";
-import Messages from "../../components/Messages/Messages";
+import Messages from "../Messages/Messages";
 import SweetAlert from "react-bootstrap-sweetalert";
 import { formatTime } from "../../utility/utility";
+import { useHistory } from "react-router-dom";
 
 import classes from "./Audience.module.scss";
 // Use for remote connections
@@ -9,6 +10,7 @@ const configuration = {
 	iceServers: [{ url: "stun:stun.1.google.com:19302" }],
 };
 const Audience = (props) => {
+	let history = useHistory();
 	//refrences
 	const webSocket = useRef(null);
 	//states
@@ -17,7 +19,6 @@ const Audience = (props) => {
 	const [connection, setconnection] = useState(null);
 	const [channel, setChannel] = useState(null);
 	const [connectedTo, setConnectedTo] = useState("");
-	const [name, setName] = useState("");
 	const [message, setMessage] = useState("");
 	const [messages, setMessages] = useState([]);
 
@@ -30,17 +31,10 @@ const Audience = (props) => {
 	};
 
 	const send = (data) => {
+		console.log(data);
 		webSocket.current.send(JSON.stringify(data));
 	};
-	useEffect(() => {
-		webSocket.current = new WebSocket("ws://localhost:9000"); //process.env.REACT_APP_WEBSOCKET_URL
-		webSocket.current.onmessage = (message) => {
-			const data = JSON.parse(message.data);
-			setSocketMessages((prev) => [...prev, data]);
-		};
-		webSocket.current.onclose = () => {
-			webSocket.current.close();
-		};
+	const setPeerConnection = () => {
 		const peerConnection = new RTCPeerConnection(configuration);
 		peerConnection.onconnectionstatechange = (evt) => {
 			console.log("change connection state: ", evt);
@@ -64,23 +58,32 @@ const Audience = (props) => {
 			remoteStream.addTrack(event.track, remoteStream);
 		};
 		setconnection(peerConnection);
+	};
+	useEffect(() => {
+		webSocket.current = new WebSocket("ws://localhost:9000"); //process.env.REACT_APP_WEBSOCKET_URL
+		webSocket.current.onmessage = (message) => {
+			const data = JSON.parse(message.data);
+			setSocketMessages((prev) => [...prev, data]);
+		};
+		webSocket.current.onclose = () => {
+			webSocket.current.close();
+		};
+		setPeerConnection();
 		return () => webSocket.current.close();
 	}, []);
-	const handleLogin = () => {
-		let user = new URLSearchParams(props.location.search).get("user");
-		user = !user ? "user1" : user;
-		setName(user);
-		send({
-			type: "login",
-			name: user,
-		});
-	};
+
 	useEffect(() => {
 		let data = socketMessages.pop();
 		if (data) {
 			console.log(data);
 			switch (data.type) {
 				case "connect":
+					send({
+						action: "login",
+						name: props.user.name,
+						broadcaster: props.user.broadcaster,
+						type: props.user.type,
+					});
 					setSocketOpen(true);
 					break;
 				case "login":
@@ -91,6 +94,48 @@ const Audience = (props) => {
 					break;
 				case "candidate":
 					onCandidate(data);
+					break;
+				case "no-broadcaster":
+					props.stopStream();
+					break;
+				case "broadcast-continue":
+					setAlert(null);
+					setPeerConnection();
+					send({
+						action: "requst-reconnect",
+						name: props.user.name,
+						broadcaster: props.user.broadcaster,
+					});
+					break;
+				case "broadcast-intrepted":
+					setAlert(
+						<SweetAlert
+							warning
+							confirmBtnBsStyle="info"
+							title="Stream"
+							showConfirm={false}
+							showCancel={false}
+						>
+							Connecting..!
+						</SweetAlert>
+					);
+					break;
+				case "broadcast-finished":
+					setAlert(
+						<SweetAlert
+							warning
+							confirmBtnBsStyle="danger"
+							title="Stream End"
+							onConfirm={() => {
+								history.push("/");
+							}}
+							onCancel={() => {
+								history.push("/");
+							}}
+						>
+							Steam has ended!
+						</SweetAlert>
+					);
 					break;
 				default:
 					break;
@@ -112,21 +157,24 @@ const Audience = (props) => {
 		connection.setRemoteDescription(new RTCSessionDescription(offer));
 		const answer = await connection.createAnswer();
 		await connection.setLocalDescription(answer);
-		send({ type: "answer", answer, name }); //connection.localDescription
+		send({ action: "answer", answer, name }); //connection.localDescription
 	};
 
 	//send msg on channel but make sure channel is open
 	const sendMsg = () => {
 		let time = formatTime(new Date());
-		let text = { time, message, name };
-		if (channel.readyState === "open") {
+		let text = { time, message, name: props.name };
+		if (channel && channel.readyState === "open") {
 			channel.send(JSON.stringify(text));
+		} else {
+			window.alert("chanel not ready");
 		}
 	};
 	return (
 		<div className={classes.container}>
+			{alert}
 			<div className={classes.container_video}>
-				<button onClick={handleLogin}>Connect</button>
+				<button onClick={props.stopStream}>Disconnect</button>
 				<video autoPlay playsInline ref={videoElement}></video>
 			</div>
 			<Messages messages={messages} setMessage={setMessage} sendMsg={sendMsg} />
