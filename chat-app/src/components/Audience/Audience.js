@@ -26,12 +26,8 @@ const Audience = (props) => {
 	const videoElement = useRef(null);
 	//temp
 	const connectedRef = useRef();
-	const closeAlert = () => {
-		setAlert(null);
-	};
 
 	const send = (data) => {
-		console.log(data);
 		webSocket.current.send(JSON.stringify(data));
 	};
 	const setPeerConnection = () => {
@@ -40,7 +36,6 @@ const Audience = (props) => {
 			console.log("change connection state: ", evt);
 		};
 		peerConnection.ondatachannel = (event) => {
-			console.log("Data channel is created!");
 			let receiveChannel = event.channel;
 			receiveChannel.onopen = () => {
 				console.log("Data channel is open and ready to be used.");
@@ -134,6 +129,23 @@ const Audience = (props) => {
 							}}
 						>
 							Steam has ended!
+						</SweetAlert>
+					);
+					break;
+				case "already_open":
+					setAlert(
+						<SweetAlert
+							warning
+							confirmBtnBsStyle="danger"
+							title="Stream End"
+							onConfirm={() => {
+								history.push("/");
+							}}
+							onCancel={() => {
+								history.push("/");
+							}}
+						>
+							{data.message}...!
 						</SweetAlert>
 					);
 					break;
