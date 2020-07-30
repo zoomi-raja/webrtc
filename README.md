@@ -16,6 +16,7 @@ Intension of this script is to make fully working broadcast app. There will be o
 pending points
 1. maintain state of user on browser refresh (done)
 2. multiple tab should be considered as one user (should maintain socket array against user)
+3. Proper user interface
 ## Technologies
 
 - **Node (Express)**
