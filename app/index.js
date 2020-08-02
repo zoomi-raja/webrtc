@@ -1,5 +1,5 @@
 const express = require("express");
-const http = require("http");
+const https = require("https");
 const cors = require("cors");
 const socketConnect = require("./websocket/socket");
 const broadcastRoutes = require("./routes/broadcastRoutes");
@@ -21,14 +21,15 @@ app.use(
 		},
 	})
 );
-/*
+
 credentials={
 	key: fs.readFileSync(path.join(__dirname + "/privkey.pem")),
 	cert: fs.readFileSync(path.join(__dirname + "/cert.pem")),
 }
-https.createServer(credentials, app);
-*/
+const server = https.createServer(credentials, app);
+/*
 const server = http.createServer(app);
+*/
 //to maintain broadcaster and their audience
 const userMap = new Map();
 
